@@ -1,6 +1,6 @@
 # COA
 - **CPU** is like brain of the compurer.
-- It has AlU(Arithematic Logic Unit),CU(Control unit), Registers(to store values.
+- It has ALU(Arithematic Logic Unit),CU(Control unit), Registers(to store values.
 
 ### What is Computer Architecture?
 1. It tells computer what to do.
@@ -34,7 +34,7 @@
 
 ## RISC vs CISC
 - **CISC** : Complex Instruction Set Computing
-  - More complicati=ed and large number of instructions.
+  - More complicatied and large number of instructions.
   - Variable length Instruction Encoding
 - **RISC** : Reduced Instruction Set Computing
   - Fewer and less complicated instructions.
@@ -83,6 +83,13 @@
 - This machinde code is now combines with linker and makes the code/program executable😍
 -  This executable is now loaded into memory by using a loader anit is implemented by using fetch decode execute.
 - 32 bit (8 bytes) in the program memory is an instruction
+
+### THE INSTRUCTION SET
+- Different instructions sets means program written for one processor can't be executed in other
+- Instruction set will work over 2 things
+  - Set of operation (i.e opcode)
+  - Set of registers
+   
 
 
 
