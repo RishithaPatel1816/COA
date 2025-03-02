@@ -4,18 +4,21 @@
 - Simple instructions.
 - Expects software to write complicated programs using simple ones.
 - There are 32 general purpose registers starting from x0 to x31
+- Some are caller saved and some are callee saved (we will discuss about this later).
 
 ## APPLICATION BINARY INTERFACE (ABI)
-- It will have readable names like sp(stack pointer) or ra(return address) makes code more readable.
+- It will have readable names like sp(stack pointer) or ra(return address) makes code more readable instead of using x1 for return address,x2 for stack pointer and s0 for framepointer.
 - It is like set of rules.It will standardize naming convention allows different compilers and assemblers to interact without any problem.
 - It will also tell how functions recieve parameters , return values and tells about caller and calle saved things.
 - Caller : It calls other functions.
+- Caller saved registers have to save the details in register before calling any function.
 - Calle  : It is the function that is being called.
+- Where as in callee saved function the details are saved by function that is called and retrieved again by that function only.Ex : stack pointer, frame pointer ,saved registers (s0-s6)
 
 ## Program Counter
 - It will point to the next instruction that needs to be implemented.
 - It usually increases by 4 bytes(i.e 32 bits which is sizwe of 1 instruction.
-- In RISC-V 2 byte also poosible (compressed instructions)
+- In RISC-V 2 byte also possible (compressed instructions)
 
 ```assembly
 add x1, x2, x3 #x1=x2+x3
@@ -41,10 +44,17 @@ addi x1, x2, 20 #x1=x2+20
 - Shift right logical vs Shift right arithematic
    - Logical will not shift with sign but Arithematic is sign extension
 ![image](https://github.com/user-attachments/assets/0b21d99b-ddda-4457-b7ca-7e8c2d581e38)
+- Opcode for arithematic operations is **0110011**.
+- Add/sub or srl/sra will have same funct3 and diff funct7.
+- Based on that we will use muxes and know which operations has to be performed.
 
 #### I-type Instructions
 ![image](https://github.com/user-attachments/assets/9507c599-ad27-4777-9680-c01aa8ae4c2e)
 - immediate is sign extended and is of 12 bits so if we add something like 0xfff (thinking it as positive val but assembly lang will consider it as -1 and subtracts it (since it has sign extension).
+- Opcode for Immediate type Instructions is **0010011**
+- Do note that only the 6th bit from right is different in I-type and R-type (i.e op[5]).
+- Various operations like addi,xori,andi,ori,srli,srai,slli can be performed.
+- Immediate is sign extended and is of 12 bits.
 
 ## Instructions for Data Transfer
 - A command that moves data between memory and registers is data transfer instruction.
@@ -74,7 +84,7 @@ sh rs2,imm(rs1)
 ![image](https://github.com/user-attachments/assets/4e77af92-7d3e-4eb5-a323-803917db18fe)
 
 - Why we don't have sbu similar to lbu?
-- It is because store just copy oasting of things, there will be no sign extension made as in load 🤦‍♀️
+- It is because store just copy pasting of things, there will be no sign extension made as in load 🤦‍♀️
 ```assembly
 # Assume x1 has 0xABCDEF00
 sw     x1, 0(x2)
@@ -118,6 +128,7 @@ else{
 ## Pseudo Instructions
 - Not specified in ISA.
 - Psedo Instructions make code readable.
+- They will be resolved at assembly time so they won't incur hardware complexity.
 - Example 1: Copy register from rs1 to rd
   - Pseudo instruction:   mv rd, rs1
   - RISC-V instruction : addi rd, rs1, 0
@@ -178,7 +189,124 @@ end:
 - RISC-V has temporary registers(t0-t6) for local computations & augmented registers (a0-a7) for passing arguments and returning values from functions.
 - Both are caller saved -> like across the function calls they are not preserved. 
 
+```
+riscv64-unknown-elf-gcc -nostdlib -nostartfiles -T ./spike.lds vowcount.s -o vowcount.elf
+```
+- The above is the command to create executable of code we have written.
+- risc64-unknown-elf-gcc : this invokes the ass,bler.
+- nostdlib : Tells not to add standard libraries. (useful for embedded systems)
+- nostartfile : prevents linking with startup files (we don't want other files to execute)
+- -T ./spike.lds : how executable should be placed in memory.
+- vowcount.elf  : it is the file name where our code is written.
+
 ### Linker Descriptor File
+![image](https://github.com/user-attachments/assets/25020f30-adcb-4cfc-943d-3f8469d829ef)
+- Inside OUTPUT_ARCH : It is written as riscv - it tells that the target architecture is riscv.
+- Inside entry what ever is there the assembly code will jump there and execute it (like specifying start point)
+- Inside sections there are 3 parts
+   1. At address : start address of program.
+   2. .text : where the code there (it will be aligned 4kb from the start)
+   3. .data : will have values (this is also aligned in 4kb)
+- Why 4kb? Coz it is the page size.
+### Executing the program
+| With OS      | Without OS |
+|----------|------------|
+| OS loads the program into memory | It will be done on bare metal    |
+| OS sets the start point and program gets executed  | This will maximize memory since we will take up other program only when the current one is terminated |
+| Parallel computation can be done  |  Parallel computation cannot be done     |
+
+- In bare metal programming, memory is divided in to two parts.
+     1. Flash Memory : will hold .text part of program
+     2. Main Memory  : will hold .data part of program
+- reset vector will have fixed address (0x800000000)
+- PC will start from that
+- This address is present in flash memory.
+
+## FUNCTION CALLS
+- We will concentrate on 4 points
+     1. Invoking Functions : how do we call them
+     2. Returning from a function : how do we return
+     3. Passing parameters : what reg are used to that
+     4. Managing local variables
+1. Invoking function calls
+   ```Assembly Language
+      jal rd, imm
+      # jump and link return adress to rd (we will jumb to pc+imm)
+      # u can also mention label instead of imm
+   ```
+- Jumps can be +/-1MB from current position.
+- Why? Immediate is of 21 bits which is approximately 2 * 10<sup>6</sup> (so -1MB to +1MB)
+- This will be relative to pc (again the same reason - instead of stroing 32 bit it is better to store 20 bits + 1 which lsb (always be 0)
+![image](https://github.com/user-attachments/assets/06f9f664-c741-4efb-a4f9-89300d852e97)
+- Pseudo Instruction : **j label ** -> jal x0,label
+#### Indirect Jumps
+```Assembly Language
+   jalr rd,rs1,imm
+   # jump and li nk but this time we will jump to rs1+imm
+```
+- Since we got 5 more bits or rs1 we will shrink and also a funct3 our immediate by 8bits.
+- This is not relate to pc
+- Pseudo Instruction : **ret rs1** -> jalr x0,rs1,0
+![image](https://github.com/user-attachments/assets/a679fc16-9d82-436f-90c4-12531ee781fb)
+
+### Function Calls
+![image](https://github.com/user-attachments/assets/e08a28fc-e58e-4a55-af27-29818eb80aa6)
+- More pseudo Instructions
+     1. j label -> jal x0,label
+     2. jr rs1  -> jalr x0,rs1,0
+     3. ret rs1 == jr rs1
+- When multiple functions are invoked ra we stor will be over written.To ensure that this doesnot happen we will introduce the concept of stack pointers.
+- **Stack Pointer** : Is used to store return address and some local variable that you want to use later
+- It grows from hugh address to low address.
+- **sp** : This is used to point lowest address in the stack.
+- Stack grows with each function call.
+- frame pointer(fp) will point to starting point of this current stack which is also known as _Stack Frame_
+- Function calls will have Prologue and Epilogue
+```Assembly Language
+# PROLOGUE
+addi sp,sp,-16
+sw ra,12(sp)
+sw a1,8(sp)    # u want to store a1 for further purposes
+sw a0,4(sp)    # assuming u wanna store a0 too
+sw a2,0(sp)    # a2 too
+# We are doing whatever we want
+# calling other functions
+#came back here again
+# EPILOGUE
+lw ra,12(sp)
+lw a1,8(sp)    # get back the values
+lw a0,4(sp)
+lw a2,0(sp)
+addi sp,sp,16
+ret     # will jump to ra
+```
+- U can also store frame pointer if u want.
+- Stack shrinks with each return
+#### Passing Parameters to Functions
+- a0/a1 are return values & function arguments
+- a2-a7 are function aruguments
+- Both are callee saved.
+- If u want pass parameters >8 then u will have to maintain the remaining values in stack.
+- **Caller Saved** : temporary data used in functions will be stored. Caller will have to push this data into stack and call the function.After the function return we will have to restore these values.
+- **Callee Saved** : Callee's responsibilty to push these data into stack.When the function ends these values are restored.
+  
+  ![image](https://github.com/user-attachments/assets/f10ff7a9-883f-4b11-bc0e-255acd9e1443)
+![image](https://github.com/user-attachments/assets/1463b45b-054e-4ad1-9783-6fe0f35ac8d2)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
