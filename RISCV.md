@@ -293,19 +293,75 @@ ret     # will jump to ra
   ![image](https://github.com/user-attachments/assets/f10ff7a9-883f-4b11-bc0e-255acd9e1443)
 ![image](https://github.com/user-attachments/assets/1463b45b-054e-4ad1-9783-6fe0f35ac8d2)
 
+- We will now discuss about how fetch-decode-execute cycles work in CPU.
+## Instruction Fetch
+- Program counter will store the address of next instruction to be implemented.
+- This PC will send this address to memory and memory returns the instruction(encoded in 32 bits) to the CPU. Along with that PC=PC+4 will be done automatically.
+- The instruction is stored in instruction register.This instruction will be executed for every pos edge of the clock cycle.
+- Instructions can be of anytye R,I,S-type. We have to decode it and execute it.
+## Instruction Decode
+- Decoding will be done by control unit. Usually instructions will have opcode,destn register,2 source registers,immediates.
+- There will be a **Register File** which consists of registers (32 bit) which are used to store data. Esch register is made of 32/64 D-Flipflops based on its architecture.
+- This register file will have 2 read operations and 1 write operations.Why? Because we might add/do any operations that requires 2 register.But final output will be 1 that we want to write.
+- Since we have 32  registers it will require 5-bits to determine which is being used(address of register).
+- Register File will have muxes and demuxes based on that only it can read or write in a _clock cycle_.
+#### R-type Instructions
+- Let the instructiob be
+```Assembly
+add x1,x2,x3
+# x1=x2+x3
+```
+![image](https://github.com/user-attachments/assets/8137a4af-a569-48f3-b8d6-10484bec0f4d)
 
+- Our task : we have to read x2 and x3 and add them using alu then write it in x1 reg.
+- Format of R-type Instruction : funct7 rs2 rs1 funct3 rd opcode
+- Control unit which has the instruction sends the bits inst[25:21] and inst[20:16] as rs2 and rs1 addresses respectively.This will be sent to register file and we will get those registers.
+- Now we will also send inst[31:20] to generation block expecting it to be immediate.We will extend 12 bits to 32 bits and this immediate and 0 are inputs of a mux where select line will be op[5] (to distinguish between R & I-type).
+- Assumig we have got 0 in this (since R-type) we will add this with rs1 (if it was I-type we would have added rs2+imm).
+- Then we will take x2 and x3 and send it to ALU.
+- ALU also comprises of demuxes to decide which operation to be performed.
+- Control unit will send opcode,funct3 & funct7 to ALU.
+- Inside ALU we will have to decide if whether which operation have to be performed. Suppose let funct7 be 0x20 then it will be doing sub of x2 n x3 and also sra and keep both of them with it.
+- Now we have funct3 to decide which of them need to be send.Again demux is used to achieve this
+- Note: _Opcode is same for all r-type instructions. funct3 is for individual operations. But add/sub , sra/srl will have same funct3. We can distinguish them only based on funct7._
+- Once we have x1 ready we will write it in register file.
 
+### I-type Instructions
+```Assembly
+addi rd,rs1,imm
+# rd=rs1+imm
+```
+![image](https://github.com/user-attachments/assets/cb518b3c-35a9-4fb8-8a3b-4f5285bc33aa)
 
+- I-type & R-type instructions opcode differ only in one bit i.e 6th bit from right (op[5])
+- This bit is used to determine whether it is I-type or R-type.
+- We will use op[5] to decide whether we have to send 0 or imm to add with rs1.
+- One more purpose it to decide to send rs2 or 0. If it op[5]=0 -> I-type so it will give 0 else rs2.
+- I-type instruction 0+imm ->imm, this will be added to rs1-> x1=rs1+imm (same alu will be doing this based on funct3).We won't have a funct7 to distinguish. But in case of shift op imm[5:11] will 0 since we can shift max by 5 bits (after that it will be 0 anyways.)
+- This ise where sending opcode to alu comes in use. If op[5] = 0 we will not use funct7 (except for srli and srai) as they will have imm of atmost val 5 so imm[5:11] have to be eithe 0x00 or 0x20.
+- And will write it in x1 register (this step is same in both).
 
-
-
-
-
-
-
-
-
-
+### Executing load and store instructions
+- Load: imm[31:20] rs1[19:15] funct3[14:12] rd[11:7] opcode[6:0]
+- Store imm[7 bits] rs2[24:20] rs1[19:15] funct3[14:12] imm[5bits]opcode[6:0]
+- Opcode for Load : 0000011
+- Opcode for Store : 0100011
+- Immediate is sent to gen block and it is extended and from the opcode op[5] to send imm or 0 (since load and store have op[5] as 0 it will give imm val only)
+##### LOAD
+- lw x10,imm(x12)
+- 0 and rs2 with select line as op[5] will give us 0 again(similar to I-type Instruction)
+- Also the address of x1 will be sent and will give that x12 out(first input of alu)
+- Imm+0 as the second input of alu
+- Similar to I-type instruction everything is done.
+- We will have additional mux for distinguishing memoery and alu operations.
+- The address x12+imm will be sent to memory and bring back value present in it and store it int x10 reg 
+![image](https://github.com/user-attachments/assets/84630025-1f5a-4ec0-a5a8-0545291b8e42)
+- Here as we can see one input is direct ans from alu and the second one is from memory operation, now op[4] is the decider tells which one should be the output. if op[4] is 1 then direct output of alu is written in x0
+- In load op[4] will be 0 hence x10 will be written with that value.
+##### STORE
+- sw x10,imm(x12)
+- Control unit will give op[5] to choose between x12 and 0 and dince op[5] is 1,x12 will be read. Also imm will be passed and x12+imm will be done 
+- x10 will bypass to memoey operation it will store tht vsl in particular address
 
 
 
