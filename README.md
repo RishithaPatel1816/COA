@@ -81,14 +81,17 @@
 - Using assembler this assembly code is conerted into machine code(.o format)
 - But machine code is not fully executable since it won't have required libraries attached abd also the addresses.
 - This machinde code is now combines with linker and makes the code/program executable😍
--  This executable is now loaded into memory by using a loader anit is implemented by using fetch decode execute.
-- 32 bit (8 bytes) in the program memory is an instruction
+-  This executable is now loaded into memory by using a loader and it is implemented by using fetch decode execute.
+- 32 bit (8 bytes) in the program memory is an instruction.
+- Each instruction id unique.
 
 ### THE INSTRUCTION SET
-- Different instructions sets means program written for one processor can't be executed in other
+- If we use Different instructions sets program written for one processor can't be executed in other.
+- Previously people used to add more instructions to make complex things but RISCV supports simple operations only leaving complicated things to software.
 - Instruction set will work over 2 things
   - Set of operation (i.e opcode)
   - Set of registers
+  
    
 
 
