@@ -393,12 +393,84 @@ addi rd,rs1,imm
 ### Interrupts 
 - There is a dedicated pin for for interrupts IRQ pin
 - That will tell cpu that there is some interrupt.
-- 
+- **Interrupt Vector** : It is a memory location that will tell where we have to jump
+- **Interrupt Vector Table** : This is table of all Interrupts possible.
+- **Interrupt Vector Number** : for each kind of external Interrupt
+- Interrupt vector = IVT Base + Interrupt Vector Number
+- So this interrupt vector will have ISR(Interrupt Service Routine) and it will jump to that address and ISR will be executed.
+- So when interrupt occurs the pc will jump to ISR (which is in IVT base + Interrupt Vector Number).And after dealing with peripheral it will return from the interrupt.The previous program will continue again.
+- There are 3 types of Interrupts
+     1. Software Interrupts - explicit instructions written in programs
+     2. Hardware Interrupts - from external peripherals
+     3. Exceptions - like dividing with 0,memoory not present
+- **Timer Interrupt** : When timer interrupt occurs it will will pause current program and will execute once the count becomes zero.
+- When we execute a program and an Interrupt occurs all the _registers,PC and data memory_ have to be stored so that value won't get erased. (PROGRAM RUNTIME EXECUTION STATE)
+- Saving is useful in multitasking,sleep mode in our laptop.
+- We should be able to create an illusion that both programs are running simultaneously.
+- **Direct Memory access** : CPU will usually load from device1 and store in devce2. But with DMA,device1 and device2 will do their jobs without involvement of CPU.
+- Exception : we get exceptions when we try to access a null pointer or dividing some number with zero.
+- Some codes will be reserved for future purposes
+- Exceptions will have code '0'
+- So in RISCV,interrupts are handled by PLIC & CLINT
+- PLIC : Platform level interrupt controller (this will take care of hardware interrupts on priority basis)
+- CLINT : Core Level Interrupt Controller (timer and software interrutpt)
+![image](https://github.com/user-attachments/assets/be743321-9178-4924-91cb-c3e30b18dfd2)
+#### Challenges because of multitasking
+1. Isolatting OS - no user should be able to modify data in memory allocated to OS
+2. Isolating programs - no program should change the data of other programs.
+3. Running out of Memory - delete some programs that are not required.
+![image](https://github.com/user-attachments/assets/f8e79a67-7c8d-4705-beae-0cef606ec4a2)
+
+## 1. Isolating OS
+- We can isolate OS with processor privilige levels
+- There can be 3 privilige levels
+     1. Machine Mode (M)  - most priviliged
+     2. Supervisor Mode (S)
+     3. User Mode (U)     - least priviliged
+- Riscv provides 1-3 modes.
+- OS will be executed in supervisor mode so normal programs that are executed in user mode can't modify OS things.
+- CPU will be in any one of the 3 modes at any given time.
+- If we try to access smt that is not allowed in particular mode cpu will rise an exception.
+- M-mode is mandatory in all RISCV implementations.
+- We will have to shift to machine mode when we get an interrupt (it can be done in supervisor also but we will do it in machine only)
+
+#### QUESTIONS ABOUT INTERRUPTS
+1. What is the cause of Interrupt?
+2. How does cpu know where to find interrupt vector address
+3. How does cpu knows where to return after it completes interrupt service routine?
+4. What was the previous privilige mode? (to return)
+
+#### CONTROL STATUS REGISTERS
+- These are not like general purpose registers.
+- They are used to handle interrupts
+- There are 3 main instructions in csr
+```Assembly
+csrrw rd,csr,rs
+# rd will store the value of csr before changing
+#val in rs will be written in csr
+```
+```Assembly
+csrrs rd,csr,rs
+#whichever bit of rs has 1 that corresponding bit in csr will be set to 1
+#intial value of csr will be stored in rd
+#it is basically or operation : csr = csr | rs
+```
+```Assembly
+csrrc rd,csr,rs
+#whichever bit of rs has 1 that corresponding bit in csr will be set to 0
+#intial value of csr will be stored in rd
+#it is basically and operation csr = csr & ~rs
+```
+![image](https://github.com/user-attachments/assets/c7aeae3e-b49a-4ef7-b54c-d5e2b2040f9f)
+
+- Pseudo instruction csrr rd,csr -> csrrw rd,csr,x0
+- csrrwi,csrrsi,csrrci are also there
+- CSR are of 12 bits that is it can have maximum of 4096 registers(in RISCV).
+- csrrsi rd,csr,3 -> 3rd bit is set as 1
 
 
 
 
 
 
-
-
+  
