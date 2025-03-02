@@ -363,12 +363,37 @@ addi rd,rs1,imm
 - Control unit will give op[5] to choose between x12 and 0 and dince op[5] is 1,x12 will be read. Also imm will be passed and x12+imm will be done 
 - x10 will bypass to memoey operation it will store tht vsl in particular address
 
-
-
-
-
-
-
+## CPU Subsystems
+- CPU susystem comprises of 3 parts
+     1. Processing Unit
+     2. Memory Unit
+     3. Input Output Devices
+- Peripherals like Monitor,Serial Port are connected to CPU via **System Bus**.
+#### System Bus
+- It is set of Wires.There are 3 type of lines
+     1. Data Line
+     2. Address Line
+     3. Control Line
+- Different architectures will have different type of buses (based on their requirements)
+- New devices can be added easily.
+- Spped of the bus depends on length of wore and number of devices connected.
+- _SYSTEM ON CHIP_ : It is basically CPU,GPU,RAM, controller all in one chip.
+- So each peripheral will have its allocated memory in the peripherals.
+### Serial Port(UART)
+- UART - Universal Asynchronous Reciever and Transmitter
+- It is like a communication protocal between devices.
+- It will have 2 wires only Tx(send data) and Rx(recieve data)
+- It is asynchronous that is it doesnot wait for clock to send signal.
+- It will have **Baud register** that determines baud rate(rate at which data flows)
+- Reciever and sender should have same baud rate
+- **Status Register** : This wi;; indivate if there is an error in data transmission.
+- Interrupt Enable Register : allows cpu to tell whether there is an interrupt or not.
+- **POLLING** : If there is no IER,CPU has to check repeatedly that if UART has something to say or not(not just UART but with other peripherals too).
+- To remove this we will introduce something known as interrupts.When there is an Interrupt CPU will be notified about it, ensuring good performance.
+### Interrupts 
+- There is a dedicated pin for for interrupts IRQ pin
+- That will tell cpu that there is some interrupt.
+- 
 
 
 
